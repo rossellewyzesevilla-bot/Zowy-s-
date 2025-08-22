@@ -1,0 +1,382 @@
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Catch the Heart Game</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(135deg, #ffdde1, #ee9ca7);
+      font-family: Arial, sans-serif;
+      text-align: center;
+      overflow: hidden;
+    }
+    h1 {
+      color: #e91e63;
+      margin: 10px;
+    }
+    #home, #game, #pandaRoom {
+      display: none;
+    }
+    #home.active, #game.active, #pandaRoom.active {
+      display: block;
+    }
+    #game {
+      position: relative;
+      width: 400px;
+      height: 500px;
+      margin: 20px auto;
+      border: 3px solid #e91e63;
+      border-radius: 10px;
+      background: white;
+      overflow: hidden;
+    }
+    #player {
+      position: absolute;
+      bottom: 10px;
+      left: 160px;
+      width: 80px;
+      height: 20px;
+      background: #e91e63;
+      border-radius: 10px;
+      cursor: grab;
+    }
+    .heart {
+      position: absolute;
+      top: 0;
+      font-size: 30px;
+      color: red;
+    }
+    #score {
+      font-size: 18px;
+      margin-top: 5px;
+      color: #e91e63;
+    }
+    /* Game Over Overlay */
+    #gameOver {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(255, 255, 255, 0.95);
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      font-size: 24px;
+      color: #e91e63;
+    }
+    .big-heart {
+      font-size: 80px;
+      animation: explode 1s ease-out forwards;
+    }
+    @keyframes explode {
+      0% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(2); opacity: 0.8; }
+      100% { transform: scale(4); opacity: 0; }
+    }
+    /* Catch explosion */
+    .explode {
+      position: absolute;
+      font-size: 30px;
+      color: red;
+      animation: explodeAnim 0.6s ease-out forwards;
+      pointer-events: none;
+    }
+    @keyframes explodeAnim {
+      0% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(2); opacity: 0.8; }
+      100% { transform: scale(3); opacity: 0; }
+    }
+    button {
+      margin-top: 10px;
+      padding: 8px 15px;
+      border: none;
+      background: #e91e63;
+      color: white;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    /* Panda Room */
+    #pandaRoom {
+      padding: 20px;
+    }
+    #panda {
+      font-size: 100px;
+      margin: 10px;
+      transition: transform 0.3s;
+    }
+    .status {
+      margin: 10px;
+      font-size: 16px;
+      color: #333;
+    }
+    /* Notification */
+    #notif {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #e91e63;
+      color: white;
+      padding: 8px 15px;
+      border-radius: 8px;
+      display: none;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <h1>💖 ZOWY HEART 💖</h1>
+
+  <!-- Home Page -->
+  <div id="home" class="active">
+    <h2>Hi baby!</h2>
+    <p>I LOVE YOU!!! FOREVER MWAAA!.</p>
+    <button onclick="startGame()">Start Game</button>
+    <br><br>
+    <!-- Paw Icon below Start -->
+    <div id="houseBtn" onclick="goToPanda()" style="font-size:40px; cursor:pointer;">🐾</div>
+    <p>Here si baby Panda</p>
+<p>
+  <a href="Lala.html" 
+     style="display:inline-block; padding:10px 20px; background:#8e44ad; color:White; font-size:18px; font-weight:bold; text-decoration:none; border-radius:10px; box-shadow:0 4px 6px rgba(0,0,0,0.3);">
+     back
+  </a>
+</p>
+  </div>
+
+  <!-- Game Page -->
+  <div id="game">
+    <div id="player"></div>
+    <div id="gameOver">
+      <div class="big-heart">💔</div>
+      <p>Game Over!</p>
+      <p id="finalScore"></p>
+      <button onclick="restartGame()">Play Again</button>
+      <button onclick="goHome()">Go Back Home</button>
+    </div>
+  </div>
+  <p id="score" style="display:none;">Score: 0</p>
+
+  <!-- Panda Room -->
+  <div id="pandaRoom">
+    <h2>Your Pet Panda 🐼</h2>
+    <div id="panda">🐼</div>
+    <div class="status">Hunger: <span id="hunger">50</span>/100</div>
+    <div class="status">Energy: <span id="energy">50</span>/100</div>
+    <div class="status">Cleanliness: <span id="clean">50</span>/100</div>
+    
+    <button onclick="feedPanda()">Feed 🍃</button>
+    <button onclick="showerPanda()">Shower 🚿</button>
+    <button onclick="sleepPanda()">Sleep 😴</button>
+    <br>
+    <button onclick="goHome()">🏡 Back to Home</button>
+  </div>
+
+  <!-- Notification -->
+  <div id="notif"></div>
+
+  <script>
+    const player = document.getElementById("player");
+    const scoreDisplay = document.getElementById("score");
+    const game = document.getElementById("game");
+    const gameOverScreen = document.getElementById("gameOver");
+    const finalScore = document.getElementById("finalScore");
+    const homePage = document.getElementById("home");
+    const pandaRoom = document.getElementById("pandaRoom");
+    const panda = document.getElementById("panda");
+    const notif = document.getElementById("notif");
+
+    // Panda stats
+    let hunger = 50, energy = 50, clean = 50;
+    const hungerEl = document.getElementById("hunger");
+    const energyEl = document.getElementById("energy");
+    const cleanEl = document.getElementById("clean");
+
+    let score, playerX, targetX;
+    let gameWidth = 400;
+    let gameHeight = 500;
+    let isGameOver = false;
+    let hearts = [];
+    let heartSpeed = 3; // start slower
+
+    function startGame() {
+      homePage.classList.remove("active");
+      game.classList.add("active");
+      pandaRoom.classList.remove("active");
+      scoreDisplay.style.display = "block";
+      initGame();
+    }
+
+    function initGame() {
+      score = 0;
+      playerX = 160;
+      targetX = 160;
+      isGameOver = false;
+      heartSpeed = 3;
+      scoreDisplay.textContent = "Score: 0";
+      player.style.left = playerX + "px";
+      gameOverScreen.style.display = "none";
+
+      // remove old hearts
+      hearts.forEach(h => h.el.remove());
+      hearts = [];
+
+      // create initial hearts
+      addHeart();
+
+      requestAnimationFrame(update);
+    }
+
+    function addHeart() {
+      let heartEl = document.createElement("div");
+      heartEl.className = "heart";
+      heartEl.textContent = "❤️";
+      game.appendChild(heartEl);
+
+      hearts.push({
+        el: heartEl,
+        x: Math.random() * (gameWidth - 30),
+        y: 0
+      });
+    }
+
+    // Handle dragging (mouse & touch)
+    function setTarget(x) {
+      let rect = game.getBoundingClientRect();
+      targetX = x - rect.left - player.offsetWidth / 2;
+      if (targetX < 0) targetX = 0;
+      if (targetX > gameWidth - player.offsetWidth) targetX = gameWidth - player.offsetWidth;
+    }
+    game.addEventListener("mousemove", (e) => setTarget(e.clientX));
+    game.addEventListener("touchmove", (e) => {
+      e.preventDefault(); // stop scrolling
+      setTarget(e.touches[0].clientX);
+    }, { passive: false });
+
+    function update() {
+      if (isGameOver) return;
+
+      // Smoothly move player toward target
+      playerX += (targetX - playerX) * 0.2;
+      player.style.left = playerX + "px";
+
+      // Move hearts
+      hearts.forEach(h => {
+        h.y += heartSpeed;
+        if (h.y > gameHeight - 30) {
+          // check collision
+          if (h.x > playerX - 20 && h.x < playerX + 80) {
+            score++;
+            scoreDisplay.textContent = "Score: " + score;
+
+            // 💥 Explode effect
+            let boom = document.createElement("div");
+            boom.className = "explode";
+            boom.textContent = "❤️";
+            boom.style.left = h.x + "px";
+            boom.style.top = (h.y - 20) + "px";
+            game.appendChild(boom);
+            setTimeout(() => boom.remove(), 600);
+
+            // reset heart
+            h.y = 0;
+            h.x = Math.random() * (gameWidth - 30);
+
+            // difficulty increases
+            if (score % 5 === 0) {
+              heartSpeed += 0.5;
+              if (hearts.length < 1) addHeart();
+            }
+          } else {
+            gameOver();
+            return;
+          }
+        }
+        h.el.style.top = h.y + "px";
+        h.el.style.left = h.x + "px";
+      });
+
+      requestAnimationFrame(update);
+    }
+
+    function gameOver() {
+      isGameOver = true;
+      finalScore.textContent = "Your Score: " + score;
+      gameOverScreen.style.display = "flex";
+    }
+
+    function restartGame() {
+      initGame();
+    }
+
+    function goHome() {
+      game.classList.remove("active");
+      homePage.classList.add("active");
+      pandaRoom.classList.remove("active");
+      scoreDisplay.style.display = "none";
+    }
+
+    // Paw icon → Panda room
+    function goToPanda() {
+      homePage.classList.remove("active");
+      game.classList.remove("active");
+      pandaRoom.classList.add("active");
+      scoreDisplay.style.display = "none";
+    }
+
+    // Panda actions
+    function feedPanda() {
+      hunger = Math.min(100, hunger + 20);
+      updateStats();
+      panda.style.transform = "scale(1.2)";
+      setTimeout(()=>panda.style.transform="scale(1)",500);
+    }
+    function showerPanda() {
+      clean = Math.min(100, clean + 20);
+      updateStats();
+      panda.textContent = "🛁🐼";
+      setTimeout(()=>panda.textContent="🐼",1000);
+    }
+    function sleepPanda() {
+      energy = Math.min(100, energy + 30);
+      updateStats();
+      panda.textContent = "💤🐼";
+      setTimeout(()=>panda.textContent="🐼",1500);
+    }
+
+    function updateStats() {
+      hungerEl.textContent = hunger;
+      energyEl.textContent = energy;
+      cleanEl.textContent = clean;
+    }
+
+    // Panda stats drain
+    setInterval(() => {
+      hunger = Math.max(0, hunger - 1);
+      energy = Math.max(0, energy - 1);
+      clean = Math.max(0, clean - 1);
+      updateStats();
+      checkNotif();
+    }, 5000); // every 5 seconds
+
+    function checkNotif() {
+      if (hunger <= 20) showNotif("🐼 Your panda is very hungry!");
+      else if (energy <= 20) showNotif("🐼 Your panda is very tired!");
+      else if (clean <= 20) showNotif("🐼 Your panda needs a shower!");
+    }
+
+    function showNotif(msg) {
+      notif.textContent = msg;
+      notif.style.display = "block";
+      setTimeout(() => notif.style.display = "none", 3000);
+    }
+
+    updateStats();
+
+  </script>
+</body>
+</html>
